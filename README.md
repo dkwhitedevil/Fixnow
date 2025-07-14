@@ -61,8 +61,7 @@ Urban problems are often left unreported due to:
 
 4. Open the app:
 
-   * On **Android**: Scan QR using **Expo Go**
-   * On **iPhone**: Use a teammate’s device with **Expo Go**
+   * On **iphone**: Scan QR using **Expo Go**
 
 ---
 
