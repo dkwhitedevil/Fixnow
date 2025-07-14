@@ -1,12 +1,12 @@
-# 🛠️ FixNow
+# 🛠️ Fixnow
 
-**FixNow** is an anonymous, community-powered platform that allows citizens to quickly report city-level issues such as:
+**Fixnow** is an anonymous, community-powered platform that allows citizens to quickly report city-level issues such as:
 - 🐕 Stray animals  
 - 💡 Broken street lights  
 - 🚧 Open drains  
 - 🗑️ Garbage overflow
 
-Built for the **IndeHub Hackathon 2025**, FixNow empowers residents to keep their neighborhoods clean, safe, and accountable — without needing to reveal their identity.
+Built for the **IndeHub Hackathon 2025**, Fixnow empowers residents to keep their neighborhoods clean, safe, and accountable — without needing to reveal their identity.
 
 ---
 
@@ -17,7 +17,7 @@ Urban problems are often left unreported due to:
 - No time to visit municipal offices  
 - Fear of identification or retaliation  
 
-**FixNow** solves this by offering a **one-tap, anonymous reporting experience**, and shows the issues on a **public map with upvote-based priority sorting**.
+**Fixnow** solves this by offering a **one-tap, anonymous reporting experience**, and shows the issues on a **public map with upvote-based priority sorting**.
 
 ---
 
@@ -45,8 +45,8 @@ Urban problems are often left unreported due to:
 
 1. Clone the repository:
    ```bash
-   git clone https://github.com/your-username/fixnow.git
-   cd fixnow
+   git clone https://github.com/your-username/Fixnow.git
+   cd Fixnow
 
 2. Install dependencies:
 
