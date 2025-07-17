@@ -1,5 +1,5 @@
 import { addDoc, collection, doc, getDocs, increment, limit, onSnapshot, orderBy, query, serverTimestamp, updateDoc } from 'firebase/firestore';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Dimensions, FlatList, Image, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import MapView, { Callout, Marker } from 'react-native-maps';
 import { db } from '../firebase';
@@ -15,7 +15,12 @@ const ISSUE_OPTIONS = [
 ];
 
 
-export default function ViewReportedIssuesScreen({ navigation }) {
+export default function ViewReportedIssuesScreen({ navigation, route }) {
+  const mapRef = useRef(null);
+  const [focused, setFocused] = useState(false);
+  const focusMarker = route?.params?.focusMarker;
+  const focusId = route?.params?.focusId;
+  // const focusType = route?.params?.focusType; // Not used here, but available if needed
   const [reports, setReports] = useState([]);
   const [loading, setLoading] = useState(true);
   const [activeCallout, setActiveCallout] = useState(null); // reportId
@@ -45,6 +50,20 @@ export default function ViewReportedIssuesScreen({ navigation }) {
     fetchReports();
   }, []);
 
+  // Focus and zoom to marker if focusMarker is provided
+  useEffect(() => {
+    if (mapRef.current && focusMarker && !focused) {
+      mapRef.current.animateToRegion({
+        latitude: focusMarker.latitude,
+        longitude: focusMarker.longitude,
+        latitudeDelta: 0.005,
+        longitudeDelta: 0.005,
+      }, 800);
+      setFocused(true);
+      setActiveCallout(focusId);
+    }
+  }, [focusMarker, focusId, focused]);
+
   if (loading) {
     return (
       <View style={styles.centered}>
@@ -61,8 +80,14 @@ export default function ViewReportedIssuesScreen({ navigation }) {
       </View>
 
       <MapView
+        ref={mapRef}
         style={styles.map}
-        initialRegion={{
+        initialRegion={focusMarker ? {
+          latitude: focusMarker.latitude,
+          longitude: focusMarker.longitude,
+          latitudeDelta: 0.005,
+          longitudeDelta: 0.005,
+        } : {
           latitude: reports[0]?.markerPosition?.latitude || 20.5937,
           longitude: reports[0]?.markerPosition?.longitude || 78.9629,
           latitudeDelta: 10,
@@ -117,75 +142,90 @@ export default function ViewReportedIssuesScreen({ navigation }) {
           };
 
           return (
-            <Marker key={report.id} coordinate={report.markerPosition}>
+            <Marker
+              key={report.id}
+              coordinate={report.markerPosition}
+              onPress={() => setActiveCallout(report.id)}
+              onCalloutPress={() => navigation.navigate('IssueDetails', { report })}
+              ref={focusId === report.id ? (ref) => {
+                if (ref && activeCallout !== report.id && focused) {
+                  setTimeout(() => ref.showCallout(), 500);
+                }
+              } : undefined}
+            >
               {markerIcon}
-              <Callout onPress={() => setActiveCallout(report.id)}>
-                <View style={styles.callout}>
-                  {markerIcon}
-                  <Text style={styles.issueTitle}>
-                    {issueOption.emoji} {issueOption.label}
-                  </Text>
-                  <Text style={styles.desc}>
-                    {report.description?.trim() || 'No description provided'}
-                  </Text>
-                  <Text style={styles.address}>
-                    {report.address || 'No address'}
-                  </Text>
-                  {report.timestamp?.toDate && (
-                    <Text style={styles.timestamp}>
-                      {report.timestamp.toDate().toLocaleString()}
+              {activeCallout === report.id && (
+                <Callout>
+                  <TouchableOpacity activeOpacity={0.8} style={styles.callout}>
+                    {markerIcon}
+                    <Text style={styles.issueTitle}>
+                      {issueOption.emoji} {issueOption.label}
                     </Text>
-                  )}
-                  {/* Like button and count */}
-                  <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 8, marginBottom: 4, alignSelf: 'center' }}>
-                    <TouchableOpacity onPress={handleLike} style={{ marginRight: 8 }}>
-                      <Text style={{ fontSize: 24 }}>{'❤️'}</Text>
-                    </TouchableOpacity>
-                    <Text style={{ fontSize: 16 }}>{report.likes || 0} Likes</Text>
-                  </View>
-                  {/* Comments List */}
-                  <View style={{ width: '100%', marginTop: 4 }}>
-                    <Text style={{ fontWeight: 'bold', fontSize: 15, marginBottom: 2, textAlign: 'center' }}>Comments</Text>
-                    {comments[report.id]?.length ? (
-                      <FlatList
-                        data={comments[report.id]}
-                        keyExtractor={item => item.id}
-                        renderItem={({ item }) => (
-                          <View style={{ marginBottom: 4, backgroundColor: '#f3f6fa', borderRadius: 6, padding: 4 }}>
-                            <Text style={{ fontWeight: 'bold', fontSize: 13 }}>{item.name}</Text>
-                            <Text style={{ fontSize: 14 }}>{item.message}</Text>
-                            {item.timestamp?.toDate && (
-                              <Text style={{ fontSize: 10, color: '#888', textAlign: 'right' }}>{item.timestamp.toDate().toLocaleString()}</Text>
-                            )}
-                          </View>
-                        )}
-                        style={{ maxHeight: 80 }}
-                      />
-                    ) : (
-                      <Text style={{ fontSize: 13, color: '#888', textAlign: 'center' }}>No comments yet.</Text>
+                    <Text style={styles.desc}>
+                      {report.description?.trim() || 'No description provided'}
+                    </Text>
+                    <Text style={styles.address}>
+                      {report.address || 'No address'}
+                    </Text>
+                    {report.timestamp?.toDate && (
+                      <Text style={styles.timestamp}>
+                        {report.timestamp.toDate().toLocaleString()}
+                      </Text>
                     )}
-                  </View>
-                  {/* Comment Form */}
-                  <View style={{ marginTop: 6, width: '100%' }}>
-                    <TextInput
-                      placeholder="Your name (optional)"
-                      value={commentInput.name}
-                      onChangeText={v => handleCommentInput('name', v)}
-                      style={{ borderWidth: 1, borderColor: '#cfd8e7', borderRadius: 8, padding: 6, marginBottom: 4, fontSize: 13 }}
-                    />
-                    <TextInput
-                      placeholder="Add a comment..."
-                      value={commentInput.message}
-                      onChangeText={v => handleCommentInput('message', v)}
-                      style={{ borderWidth: 1, borderColor: '#cfd8e7', borderRadius: 8, padding: 6, fontSize: 14, marginBottom: 4 }}
-                      multiline
-                    />
-                    <TouchableOpacity onPress={handleCommentSubmit} style={{ backgroundColor: '#135feb', borderRadius: 8, paddingVertical: 6, alignItems: 'center' }}>
-                      <Text style={{ color: '#fff', fontWeight: 'bold', fontSize: 15 }}>Post</Text>
-                    </TouchableOpacity>
-                  </View>
-                </View>
-              </Callout>
+                    {/* Like button and count */}
+                    <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 8, marginBottom: 4, alignSelf: 'center' }}>
+                      <TouchableOpacity onPress={handleLike} style={{ marginRight: 8 }}>
+                        <Text style={{ fontSize: 24 }}>{'❤️'}</Text>
+                      </TouchableOpacity>
+                      <Text style={{ fontSize: 16 }}>{report.likes || 0} Likes</Text>
+                    </View>
+                    {/* Comments List */}
+                    <View style={{ width: '100%', marginTop: 4 }}>
+                      <Text style={{ fontWeight: 'bold', fontSize: 15, marginBottom: 2, textAlign: 'center' }}>Comments</Text>
+                      {comments[report.id]?.length ? (
+                        <FlatList
+                          data={comments[report.id]}
+                          keyExtractor={item => item.id}
+                          renderItem={({ item }) => (
+                            <View style={{ marginBottom: 4, backgroundColor: '#f3f6fa', borderRadius: 6, padding: 4 }}>
+                              <Text style={{ fontWeight: 'bold', fontSize: 13 }}>{item.name}</Text>
+                              <Text style={{ fontSize: 14 }}>{item.message}</Text>
+                              {item.timestamp?.toDate && (
+                                <Text style={{ fontSize: 10, color: '#888', textAlign: 'right' }}>{item.timestamp.toDate().toLocaleString()}</Text>
+                              )}
+                            </View>
+                          )}
+                          style={{ maxHeight: 80 }}
+                        />
+                      ) : (
+                        <Text style={{ fontSize: 13, color: '#888', textAlign: 'center' }}>No comments yet.</Text>
+                      )}
+                    </View>
+                    {/* Comment Form */}
+                    <View style={{ marginTop: 6, width: '100%' }}>
+                      <TextInput
+                        placeholder="Your name (optional)"
+                        value={commentInput.name}
+                        onChangeText={v => handleCommentInput('name', v)}
+                        style={{ borderWidth: 1, borderColor: '#cfd8e7', borderRadius: 8, padding: 6, marginBottom: 4, fontSize: 13 }}
+                      />
+                      <TextInput
+                        placeholder="Add a comment..."
+                        value={commentInput.message}
+                        onChangeText={v => handleCommentInput('message', v)}
+                        style={{ borderWidth: 1, borderColor: '#cfd8e7', borderRadius: 8, padding: 6, fontSize: 14, marginBottom: 4 }}
+                        multiline
+                      />
+                      <TouchableOpacity onPress={handleCommentSubmit} style={{ backgroundColor: '#135feb', borderRadius: 8, paddingVertical: 6, alignItems: 'center' }}>
+                        <Text style={{ color: '#fff', fontWeight: 'bold', fontSize: 15 }}>Post</Text>
+                      </TouchableOpacity>
+                    </View>
+                    <Text style={{ color: '#065bf8', marginTop: 8, fontWeight: 'bold', textAlign: 'center' }}>
+                      Tap here for full details
+                    </Text>
+                  </TouchableOpacity>
+                </Callout>
+              )}
             </Marker>
           );
         })}

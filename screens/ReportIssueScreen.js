@@ -2,7 +2,7 @@ import * as Location from 'expo-location';
 import { addDoc, collection, Timestamp } from 'firebase/firestore';
 import { useEffect, useState } from 'react';
 import { Dimensions, Image, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
-import MapView, { Marker } from 'react-native-maps';
+import MapView from 'react-native-maps';
 import Svg, { Path } from 'react-native-svg';
 import { db } from '../firebase';
 
@@ -115,29 +115,12 @@ export default function ReportIssueScreen({ navigation }) {
           <View style={styles.textAreaContainer}>
             <TextInput
               style={styles.textArea}
-              placeholder="Describe the issue (optional)"
+              placeholder="Describe the issue in detail"
               value={description}
               onChangeText={setDescription}
               multiline
               numberOfLines={4}
             />
-          </View>
-          {/* Map Section */}
-          <View style={styles.mapContainer}>
-            {region && markerPosition && (
-              <MapView
-                style={styles.map}
-                region={region}
-                showsUserLocation={true}
-                onRegionChangeComplete={setRegion}
-              >
-                <Marker
-                  draggable
-                  coordinate={markerPosition}
-                  onDragEnd={onMarkerDragEnd}
-                />
-              </MapView>
-            )}
           </View>
           {/* Editable Address */}
           <View style={styles.textAreaContainer}>
@@ -148,15 +131,43 @@ export default function ReportIssueScreen({ navigation }) {
               placeholder="Search or type location"
             />
           </View>
-          <View style={styles.sectionRow}>
-            <View style={styles.sectionCol}>
-              <Text style={styles.sectionTitle}>Add Photo</Text>
-              <Text style={styles.sectionSubtitle}>Optional</Text>
-            </View>
-            <View style={styles.sectionImage}>
-              <Image source={{ uri: 'https://lh3.googleusercontent.com/aida-public/AB6AXuCK7SwoforfDNP8e72XLQVopnbhB0wc5tCbGOFhbUl14pQ2YwdMiDGOKfze8Ytm8xvOikJadLPVjmAVV_Tb443UmxW2sFpevV8mZzUaodq3eE64Wh2bAO_gWSSUvr0sWkckSpns0Omy_cMbMlH5DvDnFYnHgKqWEjOu5Lhgli80j8ZM8guVLBDionwVqcar7eKLghsDJI84RE186d1rp2pCU5xZ0SmESXcrY0XRLF7dusLBuUaEtgsPaZB-VOhGOWWD6evt_-UrDdNf' }} style={styles.bgImage} />
-            </View>
-          </View>
+          
+          {/* Map Section */}
+          <View style={styles.mapContainer}>
+      {region && (
+       <>
+      <MapView
+        style={styles.map}
+        region={region}
+        showsUserLocation={true}
+        onRegionChangeComplete={(newRegion) => {
+          setRegion(newRegion);
+          setMarkerPosition({
+            latitude: newRegion.latitude,
+            longitude: newRegion.longitude,
+          });
+          fetchAddress(newRegion.latitude, newRegion.longitude);
+        }}
+      />
+      {/* Center Pin Icon */}
+      <View
+        pointerEvents="none"
+        style={{
+          position: 'absolute',
+          top: '50%',
+          left: '50%',
+          marginLeft: -16,
+          marginTop: -32,
+          zIndex: 10,
+        }}
+      >
+        <Text style={{ fontSize: 32, textAlign: 'center' }}>📍</Text>
+      </View>
+    </>
+  )}
+</View>
+
+          
         </View>
         <View>
           <TouchableOpacity style={styles.submitButton} onPress={handleSubmit}>
@@ -386,7 +397,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
   },
   submitButton: {
-    backgroundColor: '#135feb',
+    backgroundColor: '#1398eb',
     borderRadius: 12,
     height: 48,
     justifyContent: 'center',
