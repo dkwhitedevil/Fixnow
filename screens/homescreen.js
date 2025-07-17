@@ -39,7 +39,7 @@ export default function HomeScreen({ navigation }) {
             <TouchableOpacity style={styles.reportButton} onPress={() => navigation.navigate('ReportIssue')}>
               <Text style={styles.reportButtonText}>Report an Issue</Text>
             </TouchableOpacity>
-            <TouchableOpacity style={styles.viewButton}>
+            <TouchableOpacity style={styles.viewButton} onPress={() => navigation.navigate('ViewReportedIssues')}>
               <Text style={styles.viewButtonText}>View Reported Issues</Text>
             </TouchableOpacity>
         </View>

@@ -20,10 +20,16 @@
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
-      "edgeToEdgeEnabled": true
+      "edgeToEdgeEnabled": true,
+      "package": "com.whitedevil200.Fixnow"
     },
     "web": {
       "favicon": "./assets/fixnow.png"
+    },
+    "extra": {
+      "eas": {
+        "projectId": "92f10750-bfa3-43ab-b5ae-98f36df76491"
+      }
     }
   }
 }
